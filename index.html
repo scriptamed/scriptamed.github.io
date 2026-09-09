@@ -176,16 +176,16 @@
             panel.innerHTML = '<p class="estado-carga">Consultando registros en Zenodo...</p>';
 
             try {
-                const url = `https://zenodo.org/api/records?q=${encodeURIComponent(termino)}&size=10`;
+                // Consulta original a Zenodo
+                const urlZenodo = `https://zenodo.org/api/records?q=${encodeURIComponent(termino)}&size=10`;
                 
-                const respuesta = await fetch(url, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
+                // Intermediario que resuelve el bloqueo de CORS del navegador
+                const urlConProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(urlZenodo)}`;
+
+                const respuesta = await fetch(urlConProxy);
 
                 if (!respuesta.ok) {
-                    throw new Error(`Zenodo respondió con estado ${respuesta.status}`);
+                    throw new Error(`Estado ${respuesta.status}`);
                 }
 
                 const datos = await respuesta.json();
@@ -236,7 +236,7 @@
 
             } catch (error) {
                 panel.innerHTML = `<p class="estado-carga" style="color: #c0392b;">Error de conexión: ${error.message}. Intenta nuevamente.</p>`;
-                console.error('Error al conectar con Zenodo:', error);
+                console.error('Detalle del error:', error);
             }
         }
     </script>
