@@ -155,7 +155,7 @@
     <!-- Espacio dinámico donde aparecerán las publicaciones -->
     <div id="contenedor-resultados"></div>
 
-   <script>
+  <script>
         const inputBusqueda = document.getElementById('campo-busqueda');
         
         inputBusqueda.addEventListener('keyup', function(e) {
@@ -176,14 +176,13 @@
             panel.innerHTML = '<p class="estado-carga">Consultando registros en Zenodo...</p>';
 
             try {
-                // Consulta limpia y directa a la API de Zenodo
                 const url = `https://zenodo.org/api/records?q=${encodeURIComponent(termino)}&size=10`;
                 
-                const controlador = new AbortController();
-                const temporizador = setTimeout(() => controlador.abort(), 10000); // Límite de espera: 10 segundos
-
-                const respuesta = await fetch(url, { signal: controlador.signal });
-                clearTimeout(temporizador);
+                const respuesta = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
 
                 if (!respuesta.ok) {
                     throw new Error(`Zenodo respondió con estado ${respuesta.status}`);
@@ -204,7 +203,6 @@
                     const enlace = item.links?.self_html || item.links?.html || `https://zenodo.org/records/${item.id}`;
                     const fecha = meta.publication_date || 'Fecha no especificada';
                     
-                    // Soporte para formato nuevo y clásico de autores en Zenodo
                     let listaAutores = [];
                     if (meta.creators && Array.isArray(meta.creators)) {
                         listaAutores = meta.creators.map(c => c.person_or_org?.name || c.name || 'Autor no especificado');
@@ -237,7 +235,7 @@
                 panel.innerHTML = htmlResultados;
 
             } catch (error) {
-                panel.innerHTML = `<p class="estado-carga" style="color: #c0392b;">Detalle: ${error.message}. Intenta con otro término.</p>`;
+                panel.innerHTML = `<p class="estado-carga" style="color: #c0392b;">Error de conexión: ${error.message}. Intenta nuevamente.</p>`;
                 console.error('Error al conectar con Zenodo:', error);
             }
         }
