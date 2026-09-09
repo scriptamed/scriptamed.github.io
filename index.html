@@ -5,85 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SCRIPTA Med | Recuperación de Investigación Primaria</title>
     <style>
-        /* Estilos básicos para que se vea institucional y profesional */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background-color: #f4f6f8; 
             color: #2c3e50; 
             margin: 0; 
-            padding: 0; 
+            padding: 40px 20px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            justify-content: center; 
             min-height: 100vh; 
-            text-align: center; 
+            box-sizing: border-box;
         }
         .contenedor { 
-            max-width: 900px; 
-            padding: 50px 40px; 
+            max-width: 850px; 
+            width: 100%;
             background: white; 
+            padding: 40px; 
             border-radius: 12px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
-            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06); 
+            text-align: center;
+            box-sizing: border-box;
         }
         h1 { 
             color: #1a252f; 
-            font-size: 3em; 
-            margin-bottom: 5px; 
+            font-size: 2.8em; 
+            margin: 0 0 8px 0; 
             letter-spacing: -1px;
         }
         h2 { 
             color: #7f8c8d; 
-            font-size: 1.3em; 
+            font-size: 1.15em; 
             font-weight: 400; 
-            margin-top: 0; 
+            margin: 0 0 15px 0; 
             line-height: 1.4;
         }
         .aforismo { 
             font-style: italic; 
             color: #34495e; 
-            margin: 25px 0 40px 0; 
-            font-size: 1.15em; 
-            border-bottom: 1px solid #eee;
-            padding-bottom: 20px;
+            margin: 0 0 30px 0; 
+            font-size: 1.05em; 
+            border-bottom: 1px solid #edf0f2;
+            padding-bottom: 15px;
         }
         .caja-busqueda { 
             display: flex; 
-            margin-top: 20px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.04);
             border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #dcdde1;
         }
         input[type="text"] { 
             flex: 1; 
-            padding: 18px 20px; 
-            font-size: 1.1em; 
-            border: 1px solid #dcdde1; 
-            border-radius: 8px 0 0 8px; 
+            padding: 16px 20px; 
+            font-size: 1.05em; 
+            border: none; 
             outline: none; 
-            transition: border 0.3s;
-        }
-        input[type="text"]:focus {
-            border-color: #3498db;
         }
         button { 
-            padding: 18px 40px; 
-            font-size: 1.1em; 
-            font-weight: bold;
+            padding: 16px 36px; 
+            font-size: 1.05em; 
+            font-weight: 600;
             background-color: #2980b9; 
             color: white; 
             border: none; 
-            border-radius: 0 8px 8px 0; 
             cursor: pointer; 
-            transition: background-color 0.3s;
+            transition: background-color 0.2s;
         }
         button:hover { 
             background-color: #1c5980; 
         }
         .pie-pagina {
-            margin-top: 40px; 
-            font-size: 0.9em; 
+            margin-top: 30px; 
+            font-size: 0.85em; 
             color: #95a5a6;
+        }
+        /* Contenedor de Resultados */
+        #contenedor-resultados {
+            max-width: 850px;
+            width: 100%;
+            margin-top: 25px;
+            text-align: left;
+        }
+        .tarjeta-resultado {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border: 1px solid #e1e8ed;
+        }
+        .titulo-resultado {
+            font-size: 1.25em;
+            margin: 0 0 8px 0;
+            color: #1a252f;
+        }
+        .titulo-resultado a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+        .titulo-resultado a:hover {
+            text-decoration: underline;
+        }
+        .metadatos {
+            font-size: 0.88em;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+        }
+        .resumen-texto {
+            font-size: 0.95em;
+            line-height: 1.5;
+            color: #4a5568;
+            margin: 0 0 12px 0;
+        }
+        .etiqueta-doi {
+            display: inline-block;
+            background: #eef2f7;
+            color: #2c3e50;
+            font-size: 0.8em;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            text-decoration: none;
+        }
+        .estado-carga {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
         }
     </style>
 </head>
@@ -95,14 +144,91 @@
         
         <p class="aforismo">"Verba volant, scripta manent"</p>
         
-        <!-- Esta es la barra visual. Luego la conectaremos a Zenodo -->
         <div class="caja-busqueda">
-            <input type="text" placeholder="Buscar congresos, autores, patologías o tesis...">
-            <button>Buscar</button>
+            <input type="text" id="campo-busqueda" placeholder="Buscar congresos, autores, patologías o tesis...">
+            <button id="boton-buscar" onclick="ejecutarBusqueda()">Buscar</button>
         </div>
         
         <p class="pie-pagina">Infraestructura abierta conectada a la API de Zenodo (CERN) para combatir el sesgo de publicación.</p>
     </div>
+
+    <!-- Espacio dinámico donde aparecerán las publicaciones -->
+    <div id="contenedor-resultados"></div>
+
+    <script>
+        const inputBusqueda = document.getElementById('campo-busqueda');
+        
+        // Permite presionar "Enter" para buscar
+        inputBusqueda.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                ejecutarBusqueda();
+            }
+        });
+
+        async function ejecutarBusqueda() {
+            const termino = inputBusqueda.value.trim();
+            const panel = document.getElementById('contenedor-resultados');
+
+            if (!termino) {
+                panel.innerHTML = '<p class="estado-carga">Ingresa un término para buscar.</p>';
+                return;
+            }
+
+            panel.innerHTML = '<p class="estado-carga">Consultando registros en Zenodo...</p>';
+
+            try {
+                // Consulta directa a los registros públicos de la API de Zenodo
+                const url = `https://zenodo.org/api/records?q=${encodeURIComponent(termino)}&size=10&sort=mostrecent`;
+                const respuesta = await fetch(url);
+                
+                if (!respuesta.ok) {
+                    throw new Error('Error en la conexión con Zenodo');
+                }
+
+                const datos = await respuesta.json();
+                const articulos = datos.hits.hits;
+
+                if (articulos.length === 0) {
+                    panel.innerHTML = '<p class="estado-carga">No se encontraron registros para esta búsqueda.</p>';
+                    return;
+                }
+
+                let htmlResultados = '';
+                articulos.forEach(item => {
+                    const titulo = item.metadata.title || 'Sin título';
+                    const enlace = item.links.html;
+                    const fecha = item.metadata.publication_date || 'Fecha no registrada';
+                    const autores = item.metadata.creators 
+                        ? item.metadata.creators.map(c => c.name).slice(0, 3).join(', ') + (item.metadata.creators.length > 3 ? ' et al.' : '')
+                        : 'Autor no especificado';
+                    
+                    // Limpieza básica de etiquetas HTML en la descripción
+                    let descripcion = item.metadata.description || 'Sin resumen disponible.';
+                    descripcion = descripcion.replace(/<[^>]*>?/gm, '');
+                    if (descripcion.length > 250) {
+                        descripcion = descripcion.substring(0, 250) + '...';
+                    }
+
+                    const doi = item.doi ? `<a href="https://doi.org/${item.doi}" target="_blank" class="etiqueta-doi">DOI: ${item.doi}</a>` : '';
+
+                    htmlResultados += `
+                        <div class="tarjeta-resultado">
+                            <h3 class="titulo-resultado"><a href="${enlace}" target="_blank">${titulo}</a></h3>
+                            <div class="metadatos"><strong>${autores}</strong> | ${fecha}</div>
+                            <p class="resumen-texto">${descripcion}</p>
+                            ${doi}
+                        </div>
+                    `;
+                });
+
+                panel.innerHTML = htmlResultados;
+
+            } catch (error) {
+                panel.innerHTML = '<p class="estado-carga">Hubo un problema al recuperar los datos. Intenta nuevamente.</p>';
+                console.error(error);
+            }
+        }
+    </script>
 
 </body>
 </html>
