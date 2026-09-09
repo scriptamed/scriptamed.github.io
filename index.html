@@ -155,10 +155,9 @@
     <!-- Espacio dinámico donde aparecerán las publicaciones -->
     <div id="contenedor-resultados"></div>
 
-    <script>
+   <script>
         const inputBusqueda = document.getElementById('campo-busqueda');
         
-        // Permite presionar "Enter" para buscar
         inputBusqueda.addEventListener('keyup', function(e) {
             if (e.key === 'Enter') {
                 ejecutarBusqueda();
@@ -177,16 +176,21 @@
             panel.innerHTML = '<p class="estado-carga">Consultando registros en Zenodo...</p>';
 
             try {
-                // Consulta directa a los registros públicos de la API de Zenodo
-                const url = `https://zenodo.org/api/records?q=${encodeURIComponent(termino)}&size=10&sort=mostrecent`;
-                const respuesta = await fetch(url);
+                // Consulta limpia y directa a la API de Zenodo
+                const url = `https://zenodo.org/api/records?q=${encodeURIComponent(termino)}&size=10`;
                 
+                const controlador = new AbortController();
+                const temporizador = setTimeout(() => controlador.abort(), 10000); // Límite de espera: 10 segundos
+
+                const respuesta = await fetch(url, { signal: controlador.signal });
+                clearTimeout(temporizador);
+
                 if (!respuesta.ok) {
-                    throw new Error('Error en la conexión con Zenodo');
+                    throw new Error(`Zenodo respondió con estado ${respuesta.status}`);
                 }
 
                 const datos = await respuesta.json();
-                const articulos = datos.hits.hits;
+                const articulos = datos.hits && datos.hits.hits ? datos.hits.hits : [];
 
                 if (articulos.length === 0) {
                     panel.innerHTML = '<p class="estado-carga">No se encontraron registros para esta búsqueda.</p>';
@@ -195,25 +199,34 @@
 
                 let htmlResultados = '';
                 articulos.forEach(item => {
-                    const titulo = item.metadata.title || 'Sin título';
-                    const enlace = item.links.html;
-                    const fecha = item.metadata.publication_date || 'Fecha no registrada';
-                    const autores = item.metadata.creators 
-                        ? item.metadata.creators.map(c => c.name).slice(0, 3).join(', ') + (item.metadata.creators.length > 3 ? ' et al.' : '')
-                        : 'Autor no especificado';
+                    const meta = item.metadata || {};
+                    const titulo = meta.title || 'Sin título';
+                    const enlace = item.links?.self_html || item.links?.html || `https://zenodo.org/records/${item.id}`;
+                    const fecha = meta.publication_date || 'Fecha no especificada';
                     
-                    // Limpieza básica de etiquetas HTML en la descripción
-                    let descripcion = item.metadata.description || 'Sin resumen disponible.';
+                    // Soporte para formato nuevo y clásico de autores en Zenodo
+                    let listaAutores = [];
+                    if (meta.creators && Array.isArray(meta.creators)) {
+                        listaAutores = meta.creators.map(c => c.person_or_org?.name || c.name || 'Autor no especificado');
+                    }
+                    const autores = listaAutores.length > 0 
+                        ? listaAutores.slice(0, 3).join(', ') + (listaAutores.length > 3 ? ' et al.' : '')
+                        : 'Autor no especificado';
+
+                    let descripcion = meta.description || 'Sin resumen disponible.';
                     descripcion = descripcion.replace(/<[^>]*>?/gm, '');
-                    if (descripcion.length > 250) {
-                        descripcion = descripcion.substring(0, 250) + '...';
+                    if (descripcion.length > 240) {
+                        descripcion = descripcion.substring(0, 240) + '...';
                     }
 
-                    const doi = item.doi ? `<a href="https://doi.org/${item.doi}" target="_blank" class="etiqueta-doi">DOI: ${item.doi}</a>` : '';
+                    const doiValor = item.doi || meta.doi || item.pids?.doi?.identifier;
+                    const doi = doiValor 
+                        ? `<a href="https://doi.org/${doiValor}" target="_blank" rel="noopener noreferrer" class="etiqueta-doi">DOI: ${doiValor}</a>` 
+                        : '';
 
                     htmlResultados += `
                         <div class="tarjeta-resultado">
-                            <h3 class="titulo-resultado"><a href="${enlace}" target="_blank">${titulo}</a></h3>
+                            <h3 class="titulo-resultado"><a href="${enlace}" target="_blank" rel="noopener noreferrer">${titulo}</a></h3>
                             <div class="metadatos"><strong>${autores}</strong> | ${fecha}</div>
                             <p class="resumen-texto">${descripcion}</p>
                             ${doi}
@@ -224,8 +237,8 @@
                 panel.innerHTML = htmlResultados;
 
             } catch (error) {
-                panel.innerHTML = '<p class="estado-carga">Hubo un problema al recuperar los datos. Intenta nuevamente.</p>';
-                console.error(error);
+                panel.innerHTML = `<p class="estado-carga" style="color: #c0392b;">Detalle: ${error.message}. Intenta con otro término.</p>`;
+                console.error('Error al conectar con Zenodo:', error);
             }
         }
     </script>
